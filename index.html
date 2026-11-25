@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0A1628">
+  <title>المحكمة — ركن المذاكرة</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.160/build/three.min.js"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/three-bg.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a class="brand" href="index.html" aria-label="الرئيسية">
+        <img src="assets/logo.png" alt="شعار المحكمة">
+        <span>المحكمة — ركن المذاكرة</span>
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a class="active" href="index.html" data-i18n="home">الرئيسية</a></li>
+        <li><a href="#subjects" data-i18n="courses">المواد</a></li>
+        <li><a href="dashboard.html" data-i18n="dashboard">لوحة الطالب</a></li>
+        <li><a href="login.html" data-i18n="login">تسجيل الدخول</a></li>
+      </ul>
+
+      <div class="row-actions">
+        <button class="lang-toggle" type="button" data-lang-toggle>English</button>
+        <button class="menu-toggle" type="button" id="menuToggle" aria-label="القائمة">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div id="three-background"></div>
+      <div class="container hero-grid">
+        <div class="hero-content reveal">
+          <div class="eyebrow" data-i18n="heroEyebrow">كلية الحقوق — جامعة الزقازيق</div>
+          <h1 data-i18n="heroTitle">المحكمة</h1>
+          <p class="hero-subtitle" data-i18n="heroSubtitle">ركن المذاكرة لفرقة أولى حقوق</p>
+
+          <div class="hero-actions">
+            <a class="button" href="#subjects" data-i18n="explore">استكشف المواد</a>
+            <a class="button secondary" href="login.html" data-i18n="loginNow">ابدأ الدراسة</a>
+          </div>
+        </div>
+
+        <div class="hero-emblem reveal">
+          <img src="assets/logo.png" alt="شعار المحكمة">
+        </div>
+      </div>
+    </section>
+
+    <section class="container" aria-label="الإعلانات">
+      <div class="announcement-banner" id="announcementBanner">
+        <strong data-i18n="announcements">الإعلانات:</strong>
+        <span id="announcementText">مرحبًا بكم في ركن المذاكرة — تابعوا آخر التحديثات هنا.</span>
+      </div>
+    </section>
+
+    <section class="section" id="subjects">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="eyebrow">First Year Law</div>
+            <h2 class="section-title" data-i18n="subjects">مواد الفرقة الأولى</h2>
+          </div>
+          <p class="section-description">
+            ملخصات منظمة وأسئلة واختبارات تفاعلية تساعدك على الفهم والمراجعة بطريقة عصرية.
+          </p>
+        </div>
+
+        <div class="grid">
+          <article class="card reveal" data-tilt>
+            <div class="card-icon">⚖</div>
+            <h3>مبادئ القانون</h3>
+            <p>مصادر القانون، القواعد، وأنواع الحقوق بصورة مبسطة.</p>
+          </article>
+
+          <article class="card reveal" data-tilt>
+            <div class="card-icon">S</div>
+            <h3>مدخل لدراسة القانون</h3>
+            <p>أساسيات القانون العام والخاص وتنظيم المذاكرة.</p>
+          </article>
+
+          <article class="card reveal" data-tilt>
+            <div class="card-icon">📜</div>
+            <h3>تاريخ النظم القانونية</h3>
+            <p>نشأة النظم والقوانين عبر العصور القديمة والحديثة.</p>
+          </article>
+
+          <article class="card reveal" data-tilt>
+            <div class="card-icon">♜</div>
+            <h3>القانون الدستوري</h3>
+            <p>الدستور، السلطات العامة، والحقوق والحريات.</p>
+          </article>
+
+          <article class="card reveal" data-tilt>
+            <div class="card-icon">💰</div>
+            <h3>الاقتصاد السياسي</h3>
+            <p>المفاهيم الاقتصادية الأساسية المتعلقة بالدراسة القانونية.</p>
+          </article>
+
+          <article class="card reveal" data-tilt>
+            <div class="card-icon">📊</div>
+            <h3>إحصاء ومعمل الحاسب</h3>
+            <p>مبادئ الإحصاء والأدوات الرقمية المساندة للدراسة.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" aria-label="Social media">
+      <div class="socials" id="socialLinks">
+        <a class="social-link" href="#" id="facebookLink" aria-label="Facebook" hidden>f</a>
+        <a class="social-link" href="#" id="instagramLink" aria-label="Instagram" hidden>◎</a>
+        <a class="social-link" href="#" id="tiktokLink" aria-label="TikTok" hidden>♪</a>
+        <a class="social-link" href="#" id="whatsappLink" aria-label="WhatsApp" hidden>◉</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">© 2026 المحكمة — ركن المذاكرة لفرقة أولى حقوق الزقازيق</div>
+  </footer>
+
+  <script>
+    document.getElementById("menuToggle")?.addEventListener("click", () => {
+      document.getElementById("navLinks").classList.toggle("open");
+    });
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      if (!window.AppSupabase) return;
+
+      const { data: settings } = await AppSupabase
+        .from("site_settings")
+        .select("*")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (settings) {
+        const links = {
+          facebookLink: settings.facebook_url,
+          instagramLink: settings.instagram_url,
+          tiktokLink: settings.tiktok_url,
+          whatsappLink: settings.whatsapp_url
+        };
+
+        Object.entries(links).forEach(([id, url]) => {
+          const link = document.getElementById(id);
+          if (link && url) {
+            link.href = url;
+            link.hidden = false;
+          }
+        });
+
+        const heroTitle = document.documentElement.lang === "ar"
+          ? settings.hero_title_ar
+          : settings.hero_title_en;
+        if (heroTitle) {
+          document.querySelector("[data-i18n='heroTitle']").textContent = heroTitle;
+        }
+      }
+
+      const { data: latest } = await AppSupabase
+        .from("announcements")
+        .select("title,message")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latest) {
+        document.getElementById("announcementText").textContent =
+          `${latest.title}: ${latest.message}`;
+      }
+
+      AppSupabase
+        .channel("public-announcements")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "announcements"
+        }, (payload) => {
+          const item = payload.new;
+          const banner = document.getElementById("announcementBanner");
+          const text = document.getElementById("announcementText");
+          if (text) text.textContent = `${item.title}: ${item.message}`;
+          banner?.classList.add("revealed");
+          showToast(`${item.title}: ${item.message}`);
+        })
+        .subscribe();
+    });
+  </script>
+</body>
+</html>

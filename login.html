@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تسجيل الدخول — المحكمة</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.png" alt="شعار المحكمة">
+        <span>المحكمة</span>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="index.html" data-i18n="home">الرئيسية</a></li>
+        <li><a href="index.html#subjects" data-i18n="courses">المواد</a></li>
+        <li><a class="active" href="login.html" data-i18n="login">تسجيل الدخول</a></li>
+      </ul>
+      <div class="row-actions">
+        <button class="lang-toggle" type="button" data-lang-toggle>English</button>
+        <button class="menu-toggle" type="button" id="menuToggle">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="auth-layout">
+    <section class="auth-card reveal">
+      <div class="tabs">
+        <button class="tab active" type="button" data-form="login" data-i18n="login">تسجيل الدخول</button>
+        <button class="tab" type="button" data-form="signup" data-i18n="createAccount">إنشاء حساب</button>
+        <button class="tab" type="button" data-form="reset" data-i18n="forgotPassword">نسيت كلمة المرور؟</button>
+      </div>
+
+      <form class="form-view active" id="loginForm">
+        <div class="form-group">
+          <label for="loginGmail" data-i18n="gmail">البريد الإلكتروني</label>
+          <input class="form-control" id="loginGmail" type="email" autocomplete="email" required placeholder="name@email.com">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword" data-i18n="password">كلمة المرور</label>
+          <input class="form-control" id="loginPassword" type="password" autocomplete="current-password" required minlength="6">
+        </div>
+        <button class="button" type="submit" style="width:100%">دخول</button>
+      </form>
+
+      <form class="form-view" id="signupForm">
+        <div class="form-group">
+          <label for="signupName" data-i18n="fullName">الاسم الكامل</label>
+          <input class="form-control" id="signupName" type="text" autocomplete="name" required>
+        </div>
+        <div class="form-group">
+          <label for="signupPhone" data-i18n="phone">رقم الهاتف</label>
+          <input class="form-control" id="signupPhone" type="tel" autocomplete="tel" required>
+        </div>
+        <div class="form-group">
+          <label for="signupGmail" data-i18n="gmail">البريد الإلكتروني</label>
+          <input class="form-control" id="signupGmail" type="email" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label for="signupPassword" data-i18n="password">كلمة المرور</label>
+          <input class="form-control" id="signupPassword" type="password" autocomplete="new-password" required minlength="6">
+        </div>
+        <button class="button" type="submit" style="width:100%">إنشاء الحساب</button>
+      </form>
+
+      <form class="form-view" id="resetForm">
+        <div class="form-group">
+          <label for="resetGmail" data-i18n="gmail">البريد الإلكتروني</label>
+          <input class="form-control" id="resetGmail" type="email" required placeholder="name@email.com">
+        </div>
+        <button class="button" type="submit" style="width:100%" data-i18n="resetPassword">إرسال رابط الاستعادة</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("menuToggle").addEventListener("click", () => {
+      document.getElementById("navLinks").classList.toggle("open");
+    });
+
+    document.querySelectorAll("[data-form]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll("[data-form]").forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".form-view").forEach((view) => view.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(`${tab.dataset.form}Form`)?.classList.add("active");
+      });
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const email = document.getElementById("loginGmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      if (!window.AppSupabase) {
+        return showToast("يرجى إعداد اتصال Supabase أولًا", "error");
+      }
+
+      const { data, error } = await AppSupabase.auth.signInWithPassword({ email, password });
+      if (error) return showToast(error.message, "error");
+      showToast("تم تسجيل الدخول بنجاح");
+      const destination = await getPostLoginPath(data.user);
+      setTimeout(() => location.href = destination, 500);
+    });
+
+    document.getElementById("signupForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!window.AppSupabase) {
+        return showToast("يرجى إعداد اتصال Supabase أولًا", "error");
+      }
+
+      const fullName = document.getElementById("signupName").value.trim();
+      const phone = document.getElementById("signupPhone").value.trim();
+      const email = document.getElementById("signupGmail").value.trim();
+      const password = document.getElementById("signupPassword").value;
+
+      const { data, error } = await AppSupabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${location.origin}/login.html`,
+          data: { full_name: fullName, phone }
+        }
+      });
+
+      if (error) return showToast(error.message, "error");
+      if (data.session) {
+        showToast("تم إنشاء الحساب بنجاح");
+        const destination = await getPostLoginPath(data.user);
+        setTimeout(() => location.href = destination, 700);
+      } else {
+        showToast("تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيده ثم سجّل الدخول.");
+      }
+    });
+
+    document.getElementById("resetForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!window.AppSupabase) {
+        return showToast("يرجى إعداد اتصال Supabase أولًا", "error");
+      }
+      const email = document.getElementById("resetGmail").value.trim();
+      const { error } = await AppSupabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}/login.html`
+      });
+      if (error) return showToast(error.message, "error");
+      showToast("تم إرسال رابط استعادة كلمة المرور");
+    });
+  </script>
+</body>
+</html>

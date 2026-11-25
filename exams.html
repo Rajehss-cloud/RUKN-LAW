@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الامتحانات والأسئلة — المحكمة</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body class="auth-pending">
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.png" alt="شعار المحكمة">
+        <span>المحكمة</span>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="dashboard.html" data-i18n="dashboard">لوحة الطالب</a></li>
+        <li><a href="summaries.html" data-i18n="summaries">الملخصات</a></li>
+        <li><a class="active" href="exams.html" data-i18n="exams">الامتحانات</a></li>
+        <li><a href="profile.html" data-i18n="profile">الملف الشخصي</a></li>
+      </ul>
+      <div class="row-actions">
+        <button class="lang-toggle" type="button" data-lang-toggle>English</button>
+        <button class="menu-toggle" type="button" id="menuToggle">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="dashboard-layout">
+    <div class="container">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">Exam Preparation</div>
+          <h1 class="section-title" data-i18n="exams">الأسئلة والامتحانات</h1>
+        </div>
+      </div>
+
+      <div class="announcement-banner" id="accessNotice" hidden>
+        <strong data-i18n="protected">المحتوى متاح للطلاب المعتمدين فقط</strong>
+      </div>
+
+      <div id="examContent" class="material-grid">
+        <div class="glass-panel reveal">
+          <p>جارٍ التحقق من الاشتراك...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById("menuToggle").addEventListener("click", () => {
+      document.getElementById("navLinks").classList.toggle("open");
+    });
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const user = await requireAuth();
+      if (!user) return;
+
+      const { data: profile } = await AppSupabase
+        .from("profiles")
+        .select("enrollment_status")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile || profile.enrollment_status !== "approved") {
+        document.getElementById("accessNotice").hidden = false;
+        document.getElementById("examContent").innerHTML = "";
+        return;
+      }
+
+      const { data: materials, error } = await AppSupabase
+        .from("materials")
+        .select("*")
+        .eq("type", "exam")
+        .order("created_at", { ascending: false });
+
+      if (error) return showToast(error.message, "error");
+
+      document.getElementById("examContent").innerHTML =
+        (materials || []).map((item) => `
+          <article class="glass-panel reveal revealed">
+            <div class="card-icon">✍</div>
+            <h3>${escapeHTML(item.title)}</h3>
+            <p>${escapeHTML(item.subject)}</p>
+            <div class="row-actions" style="margin-top:16px">
+              <a class="button" href="${safeUrl(item.pdf_url)}" target="_blank" rel="noopener">
+                فتح الامتحان
+              </a>
+              <a class="button secondary" href="${safeUrl(item.pdf_url)}" download>
+                تحميل
+              </a>
+            </div>
+          </article>
+        `).join("") || `
+          <div class="glass-panel">
+            <p>لا توجد نماذج امتحانات مضافة حاليًا.</p>
+          </div>
+        `;
+    });
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    function safeUrl(value) {
+      try {
+        const url = new URL(value);
+        return ["https:", "http:"].includes(url.protocol) ? url.href : "#";
+      } catch {
+        return "#";
+      }
+    }
+  </script>
+</body>
+</html>

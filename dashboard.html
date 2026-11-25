@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة الطالب — المحكمة</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body class="auth-pending">
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.png" alt="شعار المحكمة">
+        <span>المحكمة</span>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a class="active" href="dashboard.html" data-i18n="dashboard">لوحة الطالب</a></li>
+        <li><a href="summaries.html" data-i18n="summaries">الملخصات</a></li>
+        <li><a href="exams.html" data-i18n="exams">الامتحانات</a></li>
+        <li><a href="profile.html" data-i18n="profile">الملف الشخصي</a></li>
+      </ul>
+      <div class="row-actions">
+        <button class="lang-toggle" type="button" data-lang-toggle>English</button>
+        <button class="menu-toggle" type="button" id="menuToggle">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="dashboard-layout">
+    <div class="container">
+      <section class="welcome-banner reveal">
+        <img class="avatar" id="welcomeAvatar" src="assets/logo.png" alt="الصورة الشخصية">
+        <div>
+          <h2><span data-i18n="welcome">مرحبًا</span>، <span id="welcomeName">طالب القانون</span></h2>
+          <span class="status-badge" id="enrollmentStatus">غير مشترك</span>
+        </div>
+        <button class="button secondary" type="button" id="requestAccess" data-i18n="request">
+          طلب اشتراك بالمناهج
+        </button>
+      </section>
+
+      <section class="section-head reveal">
+        <div>
+          <div class="eyebrow">Student Dashboard</div>
+          <h1 class="section-title" data-i18n="courses">المواد الدراسية</h1>
+        </div>
+      </section>
+
+      <section class="grid">
+        <a class="card reveal" href="summaries.html" data-tilt>
+          <div class="card-icon">📖</div>
+          <h3 data-i18n="summaries">الملخصات</h3>
+          <p>افتح الملخصات والمراجع الخاصة بكل مادة بعد اعتماد اشتراكك.</p>
+        </a>
+
+        <a class="card reveal" href="exams.html" data-tilt>
+          <div class="card-icon">✍</div>
+          <h3 data-i18n="exams">الأسئلة والامتحانات</h3>
+          <p>راجع نماذج الأسئلة واختبر معلوماتك بالاختبارات التفاعلية.</p>
+        </a>
+
+        <a class="card reveal" href="profile.html" data-tilt>
+          <div class="card-icon">◉</div>
+          <h3 data-i18n="profile">الملف الشخصي</h3>
+          <p>عدّل بياناتك، صورة حسابك، وافحص حالة اشتراكك ورمز الدخول.</p>
+        </a>
+      </section>
+
+      <section class="section">
+        <div class="section-head reveal">
+          <h2 class="section-title" data-i18n="announcements">الإعلانات</h2>
+        </div>
+        <div id="announcementList"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById("menuToggle").addEventListener("click", () => {
+      document.getElementById("navLinks").classList.toggle("open");
+    });
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const user = await requireAuth();
+      if (!user) return;
+
+      const { data: profile, error } = await AppSupabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) return showToast(error.message, "error");
+
+      document.getElementById("welcomeName").textContent =
+        profile.full_name || user.email || "طالب القانون";
+
+      if (profile.avatar_url) {
+        document.getElementById("welcomeAvatar").src = profile.avatar_url;
+      }
+
+      const status = document.getElementById("enrollmentStatus");
+      const statuses = {
+        approved: ["status-approved", "معتمد"],
+        pending: ["status-pending", "بانتظار الموافقة"],
+        none: ["status-none", "غير مشترك"],
+        banned: ["status-banned", "محظور"]
+      };
+      const [className, label] = statuses[profile.enrollment_status] || statuses.none;
+      status.className = `status-badge ${className}`;
+      status.textContent = label;
+
+      if (profile.enrollment_status === "pending") {
+        document.getElementById("requestAccess").textContent = "طلبك قيد المراجعة";
+        document.getElementById("requestAccess").disabled = true;
+      }
+
+      if (profile.enrollment_status === "approved") {
+        document.getElementById("requestAccess").hidden = true;
+      }
+
+      if (profile.enrollment_status === "banned") {
+        document.getElementById("requestAccess").disabled = true;
+      }
+
+      document.getElementById("requestAccess").addEventListener("click", async () => {
+        const { error: updateError } = await AppSupabase.rpc("request_course_access");
+
+        if (updateError) return showToast(updateError.message, "error");
+
+        showToast("تم إرسال طلب الاشتراك");
+        setTimeout(() => location.reload(), 700);
+      });
+
+      const { data: announcements } = await AppSupabase
+        .from("announcements")
+        .select("title,message,created_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      const host = document.getElementById("announcementList");
+      host.innerHTML = (announcements || []).map((item) => `
+        <article class="announcement-banner reveal revealed">
+          <strong>${escapeHTML(item.title)}</strong>
+          <div>${escapeHTML(item.message)}</div>
+        </article>
+      `).join("") || '<p>لا توجد إعلانات حاليًا.</p>';
+
+      AppSupabase
+        .channel("dashboard-announcements")
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "announcements"
+        }, () => location.reload())
+        .subscribe();
+    });
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+  </script>
+</body>
+</html>
