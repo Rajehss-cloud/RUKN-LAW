@@ -29,6 +29,27 @@
       </ul>
 
       <div class="row-actions">
+        <div class="notification-center" data-public-announcement-center>
+          <button
+            class="notification-button"
+            type="button"
+            data-public-announcement-toggle
+            aria-expanded="false"
+            aria-controls="publicAnnouncementPanel"
+            aria-label="الإشعارات والإعلانات"
+          >
+            <span aria-hidden="true">🔔</span>
+            <span data-i18n="notifications">الإشعارات</span>
+            <span class="notification-count" data-public-announcement-count hidden>0</span>
+          </button>
+          <section class="notification-panel" id="publicAnnouncementPanel" data-public-announcement-panel hidden>
+            <div class="notification-panel-head">
+              <h2 data-i18n="announcements">الإعلانات</h2>
+              <button class="notification-close" type="button" data-public-announcement-close aria-label="إغلاق">×</button>
+            </div>
+            <div class="notification-list" data-public-announcement-list></div>
+          </section>
+        </div>
         <button class="lang-toggle" type="button" data-lang-toggle>English</button>
         <button class="menu-toggle" type="button" id="menuToggle" aria-label="القائمة">☰</button>
       </div>
@@ -56,10 +77,17 @@
       </div>
     </section>
 
-    <section class="container" aria-label="الإعلانات">
-      <div class="announcement-banner" id="announcementBanner">
-        <strong data-i18n="announcements">الإعلانات:</strong>
-        <span id="announcementText">مرحبًا بكم في ركن المذاكرة — تابعوا آخر التحديثات هنا.</span>
+    <section class="section announcement-section" id="announcements" aria-label="الإعلانات">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="eyebrow">Updates</div>
+            <h2 class="section-title" data-i18n="announcements">الإعلانات</h2>
+          </div>
+        </div>
+        <div class="announcement-list" id="publicAnnouncementList" aria-live="polite">
+          <p class="notification-empty">جارٍ تحميل الإعلانات...</p>
+        </div>
       </div>
     </section>
 
@@ -167,34 +195,63 @@
         }
       }
 
-      const { data: latest } = await AppSupabase
-        .from("announcements")
-        .select("title,message")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      window.addEventListener("public-announcements-changed", (event) => {
+        renderPublicAnnouncements(event.detail);
+      });
+      const announcements = await loadPublicAnnouncements();
+      await initPublicAnnouncementCenter(announcements);
 
-      if (latest) {
-        document.getElementById("announcementText").textContent =
-          `${latest.title}: ${latest.message}`;
+    });
+
+    async function loadPublicAnnouncements() {
+      const { data: announcements, error } = await AppSupabase
+        .from("announcements")
+        .select("id,title,message,created_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) {
+        const host = document.getElementById("publicAnnouncementList");
+        const message = document.createElement("p");
+        message.className = "notification-empty";
+        message.textContent = "تعذر تحميل الإعلانات حاليًا.";
+        host.replaceChildren(message);
+        showToast(error.message, "error");
+        return [];
       }
 
-      AppSupabase
-        .channel("public-announcements")
-        .on("postgres_changes", {
-          event: "INSERT",
-          schema: "public",
-          table: "announcements"
-        }, (payload) => {
-          const item = payload.new;
-          const banner = document.getElementById("announcementBanner");
-          const text = document.getElementById("announcementText");
-          if (text) text.textContent = `${item.title}: ${item.message}`;
-          banner?.classList.add("revealed");
-          showToast(`${item.title}: ${item.message}`);
-        })
-        .subscribe();
-    });
+      renderPublicAnnouncements(announcements || []);
+      return announcements || [];
+    }
+
+    function renderPublicAnnouncements(announcements) {
+      const host = document.getElementById("publicAnnouncementList");
+      host.replaceChildren();
+
+      if (!announcements.length) {
+        const empty = document.createElement("p");
+        empty.className = "notification-empty";
+        empty.textContent = "لا توجد إعلانات حاليًا.";
+        host.appendChild(empty);
+        return;
+      }
+
+      announcements.forEach((item) => {
+        const article = document.createElement("article");
+        article.className = "announcement-card";
+        const title = document.createElement("h3");
+        title.textContent = item.title;
+        const message = document.createElement("p");
+        message.textContent = item.message;
+        const date = document.createElement("time");
+        date.dateTime = item.created_at;
+        date.textContent = new Date(item.created_at).toLocaleString(
+          document.documentElement.lang === "ar" ? "ar-EG" : "en"
+        );
+        article.append(title, message, date);
+        host.appendChild(article);
+      });
+    }
+
   </script>
 </body>
 </html>

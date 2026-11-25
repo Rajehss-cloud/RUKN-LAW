@@ -1,6 +1,6 @@
 // استبدل القيم ببيانات مشروع Supabase الخاص بك قبل النشر.
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://mrbrwzjegebfmvhrgyeq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_2wHJwq2AMUsjkOYMLYk6iA_NjQZubw-";
 
 let isValidSupabaseUrl = false;
 try {
@@ -28,3 +28,4 @@ const supabaseClient = isConfigured && window.supabase
   : null;
 
 window.AppSupabase = supabaseClient;
+

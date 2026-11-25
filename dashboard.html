@@ -24,6 +24,27 @@
         <li><a href="profile.html" data-i18n="profile">الملف الشخصي</a></li>
       </ul>
       <div class="row-actions">
+        <div class="notification-center" data-notification-center>
+          <button
+            class="notification-button"
+            type="button"
+            data-notification-toggle
+            aria-expanded="false"
+            aria-controls="notificationPanel"
+            aria-label="الإشعارات"
+          >
+            <span aria-hidden="true">🔔</span>
+            <span data-i18n="notifications">الإشعارات</span>
+            <span class="notification-count" data-notification-count hidden>0</span>
+          </button>
+          <section class="notification-panel" id="notificationPanel" data-notification-panel hidden>
+            <div class="notification-panel-head">
+              <h2 data-i18n="notifications">الإشعارات</h2>
+              <button class="notification-close" type="button" data-notification-close aria-label="إغلاق">×</button>
+            </div>
+            <div class="notification-list" data-notification-list></div>
+          </section>
+        </div>
         <button class="lang-toggle" type="button" data-lang-toggle>English</button>
         <button class="menu-toggle" type="button" id="menuToggle">☰</button>
       </div>
@@ -35,7 +56,7 @@
       <section class="welcome-banner reveal">
         <img class="avatar" id="welcomeAvatar" src="assets/logo.png" alt="الصورة الشخصية">
         <div>
-          <h2><span data-i18n="welcome">مرحبًا</span>، <span id="welcomeName">طالب القانون</span></h2>
+          <h2><span data-i18n="welcome">مرحبًا بك</span> <span id="welcomeName">طالب القانون</span></h2>
           <span class="status-badge" id="enrollmentStatus">غير مشترك</span>
         </div>
         <button class="button secondary" type="button" id="requestAccess" data-i18n="request">
@@ -70,7 +91,7 @@
         </a>
       </section>
 
-      <section class="section">
+      <section class="section" id="announcements">
         <div class="section-head reveal">
           <h2 class="section-title" data-i18n="announcements">الإعلانات</h2>
         </div>
@@ -95,9 +116,13 @@
         .single();
 
       if (error) return showToast(error.message, "error");
+      await initNotificationCenter(
+        user,
+        ["admin", "super_admin"].includes(profile.role)
+      );
 
       document.getElementById("welcomeName").textContent =
-        profile.full_name || user.email || "طالب القانون";
+        profile.full_name || user.user_metadata?.full_name || user.email || "طالب القانون";
 
       if (profile.avatar_url) {
         document.getElementById("welcomeAvatar").src = profile.avatar_url;
@@ -136,11 +161,25 @@
         setTimeout(() => location.reload(), 700);
       });
 
-      const { data: announcements } = await AppSupabase
+      await loadAnnouncements();
+
+      AppSupabase
+        .channel("dashboard-announcements")
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "announcements"
+        }, loadAnnouncements)
+        .subscribe();
+    });
+
+    async function loadAnnouncements() {
+      const { data: announcements, error } = await AppSupabase
         .from("announcements")
         .select("title,message,created_at")
         .order("created_at", { ascending: false })
         .limit(20);
+      if (error) return showToast(error.message, "error");
 
       const host = document.getElementById("announcementList");
       host.innerHTML = (announcements || []).map((item) => `
@@ -149,16 +188,7 @@
           <div>${escapeHTML(item.message)}</div>
         </article>
       `).join("") || '<p>لا توجد إعلانات حاليًا.</p>';
-
-      AppSupabase
-        .channel("dashboard-announcements")
-        .on("postgres_changes", {
-          event: "*",
-          schema: "public",
-          table: "announcements"
-        }, () => location.reload())
-        .subscribe();
-    });
+    }
 
     function escapeHTML(value) {
       return String(value ?? "").replace(/[&<>"']/g, (char) => ({

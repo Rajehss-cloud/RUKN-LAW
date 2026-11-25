@@ -25,6 +25,27 @@
       </ul>
 
       <div class="row-actions">
+        <div class="notification-center" data-notification-center>
+          <button
+            class="notification-button"
+            type="button"
+            data-notification-toggle
+            aria-expanded="false"
+            aria-controls="notificationPanel"
+            aria-label="الإشعارات"
+          >
+            <span aria-hidden="true">🔔</span>
+            <span data-i18n="notifications">الإشعارات</span>
+            <span class="notification-count" data-notification-count hidden>0</span>
+          </button>
+          <section class="notification-panel" id="notificationPanel" data-notification-panel hidden>
+            <div class="notification-panel-head">
+              <h2 data-i18n="notifications">الإشعارات</h2>
+              <button class="notification-close" type="button" data-notification-close aria-label="إغلاق">×</button>
+            </div>
+            <div class="notification-list" data-notification-list></div>
+          </section>
+        </div>
         <button class="lang-toggle" type="button" data-lang-toggle>English</button>
         <button class="menu-toggle" type="button" id="menuToggle" aria-label="القائمة">☰</button>
       </div>
@@ -37,7 +58,7 @@
         <div>
           <div class="eyebrow">Administration Panel</div>
           <h1 class="section-title" data-i18n="admin">لوحة الإدارة</h1>
-          <p class="admin-account">المسؤول: sherifeltahawy86@gmail.com</p>
+          <p class="admin-account" id="adminAccountLabel">جارٍ تحميل حساب المسؤول...</p>
         </div>
         <button class="danger-button" type="button" id="adminLogout" data-i18n="logout">
           تسجيل الخروج
@@ -45,8 +66,32 @@
       </div>
 
       <div class="admin-grid">
-        <section class="admin-panel reveal">
+        <section class="admin-panel reveal" data-admin-permission="students" hidden>
           <h2>الطلاب وطلبات الاشتراك</h2>
+          <details class="admin-subpanel">
+            <summary>إضافة حساب طالب</summary>
+            <form id="studentAccountForm" class="admin-form">
+              <div class="profile-fields">
+                <div class="form-group">
+                  <label for="studentFullName">اسم الطالب</label>
+                  <input class="form-control" id="studentFullName" required maxlength="120">
+                </div>
+                <div class="form-group">
+                  <label for="studentPhone">رقم الهاتف</label>
+                  <input class="form-control" id="studentPhone" type="tel" maxlength="40">
+                </div>
+                <div class="form-group">
+                  <label for="studentEmail">البريد الإلكتروني</label>
+                  <input class="form-control" id="studentEmail" type="email" required maxlength="254">
+                </div>
+                <div class="form-group">
+                  <label for="studentPassword">كلمة مرور مؤقتة (8 أحرف على الأقل)</label>
+                  <input class="form-control" id="studentPassword" type="password" required minlength="8" autocomplete="new-password">
+                </div>
+              </div>
+              <button class="button" type="submit">إنشاء حساب الطالب</button>
+            </form>
+          </details>
           <div class="table-wrap">
             <table>
               <thead>
@@ -66,7 +111,7 @@
           </div>
         </section>
 
-        <section class="admin-panel reveal">
+        <section class="admin-panel reveal" data-admin-permission="announcements" hidden>
           <h2>إضافة إعلان</h2>
           <form id="announcementForm">
             <div class="form-group">
@@ -86,7 +131,32 @@
         </section>
       </div>
 
-      <div class="section">
+      <div class="section" data-super-admin-only hidden>
+        <section class="admin-panel reveal">
+          <h2>إدارة المسؤولين والصلاحيات</h2>
+          <p class="section-description">
+            أنشئ حسابًا من قسم الطلاب أولًا، ثم اختره هنا لترقيته إلى مسؤول وحدد أقسامه. لا يمكن للمسؤولين فتح هذه الإدارة.
+          </p>
+          <form id="adminAccessForm" class="admin-form">
+            <div class="form-group">
+              <label for="adminTarget">حساب المسؤول</label>
+              <select class="form-control" id="adminTarget" required>
+                <option value="">جارٍ تحميل الحسابات...</option>
+              </select>
+            </div>
+            <fieldset class="permission-options">
+              <legend>الأقسام المسموح بها</legend>
+              <label><input type="checkbox" name="adminPermission" value="students"> إدارة الطلاب وإنشاء حساباتهم</label>
+              <label><input type="checkbox" name="adminPermission" value="announcements"> نشر الإعلانات</label>
+              <label><input type="checkbox" name="adminPermission" value="materials"> إدارة المواد</label>
+              <label><input type="checkbox" name="adminPermission" value="settings"> إعدادات الموقع</label>
+            </fieldset>
+            <button class="button" type="submit">حفظ صلاحيات المسؤول</button>
+          </form>
+        </section>
+      </div>
+
+      <div class="section" data-admin-permission="materials" hidden>
         <section class="admin-panel reveal">
           <h2>إضافة ملخص أو امتحان</h2>
           <form id="materialForm">
@@ -126,7 +196,7 @@
         </section>
       </div>
 
-      <div class="section">
+      <div class="section" data-admin-permission="settings" hidden>
         <section class="admin-panel reveal">
           <h2>إعدادات الروابط والترويسة</h2>
           <form id="settingsForm">
@@ -170,6 +240,8 @@
   </main>
 
   <script>
+    let currentAdminIsSuperAdmin = false;
+
     document.getElementById("menuToggle").addEventListener("click", () => {
       document.getElementById("navLinks").classList.toggle("open");
     });
@@ -177,15 +249,57 @@
     window.addEventListener("DOMContentLoaded", async () => {
       const admin = await requireAdmin();
       if (!admin) return;
+      currentAdminIsSuperAdmin = admin.role === "super_admin";
+      document.getElementById("adminAccountLabel").textContent =
+        `${currentAdminIsSuperAdmin ? "المسؤول الرئيسي" : "المسؤول"}: ${admin.full_name || admin.gmail || admin.id}`;
 
-      await loadStudents();
-      await loadSettings();
+      const permissions = await loadAdminPermissions(admin);
+      if (!permissions) return;
+
+      applyAdminPermissions(admin, permissions);
+      await initNotificationCenter(admin, permissions.has("announcements"));
+
+      if (permissions.has("students")) {
+        await loadStudents();
+      }
+      if (currentAdminIsSuperAdmin) await loadAdminTargets();
+      if (permissions.has("settings")) {
+        await loadSettings();
+      }
     });
+
+    async function loadAdminPermissions(admin) {
+      if (admin.role === "super_admin") {
+        return new Set(["students", "announcements", "materials", "settings"]);
+      }
+
+      const { data, error } = await AppSupabase
+        .from("admin_permissions")
+        .select("permissions")
+        .eq("user_id", admin.id)
+        .maybeSingle();
+
+      if (error) {
+        showToast(error.message, "error");
+        return null;
+      }
+      return new Set(data?.permissions || []);
+    }
+
+    function applyAdminPermissions(admin, permissions) {
+      document.querySelectorAll("[data-admin-permission]").forEach((section) => {
+        section.hidden = !permissions.has(section.dataset.adminPermission);
+      });
+      document.querySelectorAll("[data-super-admin-only]").forEach((section) => {
+        section.hidden = admin.role !== "super_admin";
+      });
+    }
 
     async function loadStudents() {
       const { data: students, error } = await AppSupabase
         .from("profiles")
         .select("id,full_name,gmail,phone,enrollment_status,access_code,role")
+        .eq("role", "student")
         .order("created_at", { ascending: false });
 
       if (error) return showToast(error.message, "error");
@@ -353,6 +467,101 @@
         return false;
       }
     }
+
+    document.getElementById("studentAccountForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      button.disabled = true;
+
+      const form = event.currentTarget;
+      try {
+        const { error } = await AppSupabase.functions.invoke("create-student", {
+          body: {
+            fullName: document.getElementById("studentFullName").value.trim(),
+            phone: document.getElementById("studentPhone").value.trim(),
+            email: document.getElementById("studentEmail").value.trim(),
+            password: document.getElementById("studentPassword").value
+          }
+        });
+        if (error) return showToast(error.message, "error");
+
+        form.reset();
+        showToast("تم إنشاء حساب الطالب");
+        await loadStudents();
+        if (currentAdminIsSuperAdmin) await loadAdminTargets();
+      } catch (error) {
+        showToast(error.message || "تعذر إنشاء حساب الطالب", "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    async function loadAdminTargets() {
+      const select = document.getElementById("adminTarget");
+      const previousId = select.value;
+      const { data: accounts, error } = await AppSupabase
+        .from("profiles")
+        .select("id,full_name,gmail,role")
+        .neq("role", "super_admin")
+        .order("created_at", { ascending: false });
+
+      if (error) return showToast(error.message, "error");
+
+      select.replaceChildren(new Option("اختر حسابًا", ""));
+      (accounts || []).forEach((account) => {
+        const label = `${account.full_name || "بدون اسم"} — ${account.gmail || account.id} (${account.role === "admin" ? "مسؤول" : "طالب"})`;
+        const option = new Option(label, account.id);
+        option.dataset.role = account.role;
+        select.appendChild(option);
+      });
+
+      if (!accounts?.length) {
+        select.replaceChildren(new Option("لا توجد حسابات طلاب أو مسؤولين", ""));
+      } else if (accounts.some((account) => account.id === previousId)) {
+        select.value = previousId;
+      }
+
+      await loadSelectedAdminPermissions();
+    }
+
+    async function loadSelectedAdminPermissions() {
+      const selected = document.getElementById("adminTarget").selectedOptions[0];
+      const permissions = new Set();
+      if (selected?.dataset.role === "admin") {
+        const { data, error } = await AppSupabase
+          .from("admin_permissions")
+          .select("permissions")
+          .eq("user_id", selected.value)
+          .maybeSingle();
+        if (error) return showToast(error.message, "error");
+        (data?.permissions || []).forEach((permission) => permissions.add(permission));
+      }
+
+      document.querySelectorAll("[name='adminPermission']").forEach((checkbox) => {
+        checkbox.checked = permissions.has(checkbox.value);
+      });
+    }
+
+    document.getElementById("adminTarget").addEventListener("change", loadSelectedAdminPermissions);
+
+    document.getElementById("adminAccessForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const accountId = document.getElementById("adminTarget").value;
+      const permissions = Array.from(
+        document.querySelectorAll("[name='adminPermission']:checked"),
+        (checkbox) => checkbox.value
+      );
+      if (!accountId) return showToast("اختر حسابًا أولًا", "error");
+
+      const { error } = await AppSupabase.rpc("set_admin_access", {
+        p_user_id: accountId,
+        p_permissions: permissions
+      });
+      if (error) return showToast(error.message, "error");
+
+      showToast("تم حفظ صلاحيات المسؤول");
+      await loadAdminTargets();
+    });
   </script>
 </body>
 </html>
